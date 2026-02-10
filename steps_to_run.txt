@@ -1,0 +1,35 @@
+STEP 1: WHAT TO DELETE (IMPORTANT)
+
+rm -f data/cleaned_loan_data.csv
+rm -f model/loan_model.pkl
+
+
+
+
+
+STEP 2: RE-RUN PIPELINE (IN THIS EXACT ORDER)
+🔴 ORDER MATTERS — DO NOT SKIP
+1️⃣ DATA PREPROCESSING
+python3 src/preprocessing.py
+
+CREATES
+loan_data.csv
+cleaned_loan_data.csv
+
+2️⃣ VERIFY CLEANED DATA (MANDATORY)
+python3 -c "import pandas as pd; df=pd.read_csv('data/cleaned_loan_data.csv'); print(df.info())"
+
+
+
+3️⃣ MODEL TRAINING
+python3 src/train_model.py
+
+
+
+
+CREATED-----loan_model.pkl
+
+4️⃣ GUI RUN
+python3 gui/app.py
+
+
