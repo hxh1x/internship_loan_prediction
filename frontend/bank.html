@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bank Officer Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #ecf0f1; margin: 0; padding: 0; }
+        .navbar { background: linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; color: white; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        .navbar h1 { margin: 0; font-size: 20px; }
+        .logout-btn { background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 8px 15px; border-radius: 20px; text-decoration: none; font-size: 14px; cursor: pointer; }
+        .logout-btn:hover { background: white; color: #2c3e50; }
+        .container { max-width: 1100px; margin: 30px auto; padding: 20px; }
+        .panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #ecf0f1; padding-bottom: 15px; }
+        .refresh-btn { background: #34495e; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th { background-color: #f8f9fa; color: #7f8c8d; font-weight: 600; text-align: left; padding: 12px; border-bottom: 2px solid #ddd; }
+        td { padding: 12px; border-bottom: 1px solid #eee; color: #2c3e50; }
+        tr:hover { background-color: #fcfcfc; }
+        .badge { padding: 5px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; color: white; display: inline-block; }
+        .bg-REQUESTED { background-color: #f39c12; }
+        .bg-ELIGIBLE { background-color: #27ae60; }
+        .bg-REJECTED { background-color: #c0392b; }
+        .bg-OFFER_SENT { background-color: #2980b9; }
+        .bg-OFFER_ACCEPTED { background-color: #8e44ad; }
+        .bg-DISBURSED { background-color: #27ae60; }
+
+        .btn-action { padding: 6px 12px; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; font-size: 12px; }
+        .btn-ml { background-color: #8e44ad; }
+        .btn-quote { background-color: #e67e22; }
+        .btn-disburse { background-color: #2ecc71; }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    <h1>🛡️ Bank Officer Console</h1>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+</div>
+
+<div class="container">
+    <div class="panel">
+        <div class="panel-header">
+            <h2 style="margin:0; color:#2c3e50;">Active Loan Requests</h2>
+            <button class="refresh-btn" onclick="loadDashboard()">↻ Refresh Data</button>
+        </div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Req ID</th>
+                    <th>Income</th>
+                    <th>Loan Amt</th>
+                    <th>Term</th>
+                    <th>CIBIL</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                <tr><td colspan="7" style="text-align:center;">Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const API_BASE = 'http://127.0.0.1:5000/api';
+
+    async function loadDashboard() {
+        try {
+            const res = await fetch(`${API_BASE}/db`);
+            const db = await res.json();
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            if (db.loan_requests.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px;">No requests found.</td></tr>';
+                return;
+            }
+
+            const sortedReqs = db.loan_requests.sort((a,b) => b.request_id - a.request_id);
+
+            sortedReqs.forEach(req => {
+                let actionBtn = '-';
+                
+                if (req.status === 'REQUESTED') {
+                    actionBtn = `<button class="btn-action btn-ml" onclick="runML(${req.request_id})">⚡ Run ML Check</button>`;
+                } else if (req.status === 'ELIGIBLE') {
+                    actionBtn = `<button class="btn-action btn-quote" onclick="generateQuote(${req.request_id})">📄 Generate Quote</button>`;
+                } else if (req.status === 'REJECTED') {
+                    actionBtn = '<span style="color:#c0392b; font-size:12px;">Rejected by Model</span>';
+                } else if (req.status === 'OFFER_SENT') {
+                    actionBtn = '<span style="color:#2980b9; font-size:12px;">Waiting for Customer</span>';
+                } else if (req.status === 'OFFER_ACCEPTED') {
+                    actionBtn = `<button class="btn-action btn-disburse" onclick="disburseFunds(${req.request_id})">💸 Disburse Funds</button>`;
+                } else if (req.status === 'DISBURSED') {
+                    actionBtn = '<span style="color:#27ae60; font-size:12px; font-weight:bold;">✔ ACTIVE LOAN</span>';
+                }
+
+                const row = `
+                    <tr>
+                        <td>#${req.request_id}</td>
+                        <td>₹${req.features.income}</td>
+                        <td>₹${req.features.loan_amount}</td>
+                        <td>${req.features.loan_term}m</td>
+                        <td><strong>${req.features.cibil_score}</strong></td>
+                        <td><span class="badge bg-${req.status}">${req.status}</span></td>
+                        <td>${actionBtn}</td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+
+        } catch (err) {
+            console.error(err);
+            alert("Failed to load data. Is backend running?");
+        }
+    }
+
+    async function runML(id) {
+        if(!confirm(`Run Machine Learning eligibility check for Request #${id}?`)) return;
+        try {
+            const res = await fetch(`${API_BASE}/evaluate-eligibility`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ request_id: id })
+            });
+            const data = await res.json();
+            alert(data.message);
+            loadDashboard();
+        } catch(e) { alert("Error connecting to ML Model"); }
+    }
+
+    async function generateQuote(id) {
+        try {
+            const res = await fetch(`${API_BASE}/generate-quote`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ request_id: id })
+            });
+            const data = await res.json();
+            alert(`Quote Generated!\nEMI: ₹${data.quote.emi_amount}\nRate: ${data.quote.interest_rate}%`);
+            loadDashboard();
+        } catch(e) { alert("Error generating quote"); }
+    }
+
+    async function disburseFunds(id) {
+        if(!confirm("Disburse funds and create active loan account?")) return;
+        try {
+            const res = await fetch(`${API_BASE}/disburse-loan`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ request_id: id })
+            });
+            const data = await res.json();
+            alert(data.message);
+            loadDashboard();
+        } catch(e) { alert("Error disbursing funds"); }
+    }
+
+    function logout() { window.location.href = 'login.html'; }
+    loadDashboard();
+</script>
+</body>
+</html>

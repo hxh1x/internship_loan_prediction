@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bank System Login</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+        }
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .login-card h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .role-toggle {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            background: #f1f1f1;
+            border-radius: 20px;
+            padding: 5px;
+        }
+        .role-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 15px;
+            font-weight: bold;
+            color: #777;
+            transition: 0.3s;
+        }
+        .role-btn.active {
+            background: white;
+            color: #764ba2;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #764ba2;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 15px;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #5a367e;
+        }
+        .error-msg {
+            color: #e74c3c;
+            font-size: 13px;
+            margin-top: 10px;
+            display: none;
+        }
+        .hint {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #888;
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <h2>Secure Banking Login</h2>
+    
+    <div class="role-toggle">
+        <button type="button" class="role-btn active" id="btn-customer" onclick="setRole('customer')">Customer</button>
+        <button type="button" class="role-btn" id="btn-bank" onclick="setRole('bank')">Bank Officer</button>
+    </div>
+
+    <form id="loginForm">
+        <input type="text" id="username" placeholder="Username" required>
+        <input type="password" id="password" placeholder="Password" required>
+        <button type="submit">Login</button>
+        <div class="error-msg" id="errorMsg">Invalid Credentials</div>
+    </form>
+
+    <div class="hint">
+        <strong>Demo Credentials:</strong><br>
+        Customer: <code>user</code> / <code>user</code><br>
+        Bank: <code>admin</code> / <code>admin</code>
+    </div>
+</div>
+
+<script>
+    let currentRole = 'customer';
+
+    function setRole(role) {
+        currentRole = role;
+        document.getElementById('btn-customer').className = role === 'customer' ? 'role-btn active' : 'role-btn';
+        document.getElementById('btn-bank').className = role === 'bank' ? 'role-btn active' : 'role-btn';
+        
+        // Auto-fill for demo purposes (Optional, makes demo smoother)
+        if(role === 'customer') {
+            document.getElementById('username').value = 'user';
+            document.getElementById('password').value = 'user';
+        } else {
+            document.getElementById('username').value = 'admin';
+            document.getElementById('password').value = 'admin';
+        }
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const errorMsg = document.getElementById('errorMsg');
+
+        try {
+            const response = await fetch('http://127.0.0.1:5000/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                // Success! Redirect to the correct dashboard
+                window.location.href = result.redirect;
+            } else {
+                // Error
+                errorMsg.style.display = 'block';
+                errorMsg.innerText = result.message;
+            }
+        } catch (error) {
+            errorMsg.style.display = 'block';
+            errorMsg.innerText = "Cannot connect to backend server.";
+        }
+    });
+
+    // Initialize default demo values
+    setRole('customer');
+</script>
+
+</body>
+</html>

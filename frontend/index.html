@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Dashboard - Apply</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; }
+        .navbar { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; color: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .navbar h1 { margin: 0; font-size: 20px; }
+        .logout-btn { background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 8px 15px; border-radius: 20px; text-decoration: none; font-size: 14px; transition: 0.3s; cursor: pointer; }
+        .logout-btn:hover { background: white; color: #764ba2; }
+        .container { max-width: 800px; margin: 30px auto; padding: 20px; }
+        .card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .card h2 { margin-top: 0; color: #333; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; margin-bottom: 20px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .form-group label { display: block; font-weight: 600; margin-bottom: 5px; color: #555; font-size: 13px; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        button.submit-btn { width: 100%; padding: 12px; background: #2ecc71; color: white; border: none; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; margin-top: 20px; transition: 0.3s; }
+        button.submit-btn:hover { background: #27ae60; }
+        
+        /* Status & Action Styles */
+        .status-item { padding: 15px; background: #f8f9fa; border-left: 4px solid #ddd; margin-bottom: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;}
+        .st-REQUESTED { border-color: #f39c12; }
+        .st-ELIGIBLE { border-color: #27ae60; }
+        .st-REJECTED { border-color: #c0392b; }
+        .st-OFFER_SENT { border-color: #2980b9; background-color: #eaf2f8; }
+        .st-OFFER_ACCEPTED { border-color: #8e44ad; }
+        .st-DISBURSED { border-color: #27ae60; background-color: #e9f7ef; }
+
+        .accept-btn { background-color: #2980b9; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .accept-btn:hover { background-color: #1abc9c; }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    <h1>🏦 Loan Customer Portal</h1>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+</div>
+
+<div class="container">
+    <div class="card">
+        <h2>📝 New Loan Application</h2>
+        <form id="loanForm">
+            <div class="form-grid">
+                <div class="form-group"><label>Dependents</label><input type="number" id="dependents" value="0"></div>
+                <div class="form-group"><label>Education</label>
+                    <select id="education"><option value="1">Graduate</option><option value="0">Not Graduate</option></select>
+                </div>
+                <div class="form-group"><label>Self Employed?</label>
+                    <select id="self_employed"><option value="1">Yes</option><option value="0">No</option></select>
+                </div>
+                <div class="form-group"><label>CIBIL Score</label><input type="number" id="cibil_score" value="750"></div>
+                <div class="form-group"><label>Annual Income (₹)</label><input type="number" id="income" value="500000"></div>
+                <div class="form-group"><label>Loan Amount (₹)</label><input type="number" id="loan_amount" value="200000"></div>
+                <div class="form-group"><label>Loan Term (Months)</label><input type="number" id="loan_term" value="36"></div>
+                <div class="form-group"><label>Bank Asset Value (₹)</label><input type="number" id="bank_asset" value="50000"></div>
+                <div class="form-group"><label>Residential Assets (₹)</label><input type="number" id="res_asset" value="1000000"></div>
+                <div class="form-group"><label>Commercial Assets (₹)</label><input type="number" id="com_asset" value="0"></div>
+                <div class="form-group"><label>Luxury Assets (₹)</label><input type="number" id="lux_asset" value="0"></div>
+            </div>
+            <button type="submit" class="submit-btn">Submit Application</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>📊 My Applications</h2>
+        <div id="status-area">
+            <p style="color:#777; font-style:italic;">Loading...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = 'http://127.0.0.1:5000/api';
+    
+    document.getElementById('loanForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+            dependents: document.getElementById('dependents').value,
+            education: document.getElementById('education').value,
+            self_employed: document.getElementById('self_employed').value,
+            income: document.getElementById('income').value,
+            loan_amount: document.getElementById('loan_amount').value,
+            loan_term: document.getElementById('loan_term').value,
+            cibil_score: document.getElementById('cibil_score').value,
+            res_asset: document.getElementById('res_asset').value,
+            com_asset: document.getElementById('com_asset').value,
+            lux_asset: document.getElementById('lux_asset').value,
+            bank_asset: document.getElementById('bank_asset').value,
+            user_id: 1 
+        };
+        try {
+            const res = await fetch(`${API_BASE}/request-loan`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            alert("Application Submitted! ID: " + data.request_id);
+            loadMyRequests();
+        } catch (err) { alert("Error submitting form"); }
+    });
+
+    async function loadMyRequests() {
+        const res = await fetch(`${API_BASE}/db`);
+        const db = await res.json();
+        const myReqs = db.loan_requests.filter(r => r.user_id === 1).sort((a,b) => b.request_id - a.request_id);
+        
+        const container = document.getElementById('status-area');
+        container.innerHTML = '';
+        
+        if(myReqs.length === 0) {
+            container.innerHTML = '<p style="color:#777;">No active applications.</p>';
+            return;
+        }
+
+        myReqs.forEach(req => {
+            let content = `<div><strong>ID #${req.request_id}</strong> - Status: <span style="font-weight:bold">${req.status}</span>`;
+            
+            if(req.status === 'OFFER_SENT') {
+                const quote = db.loan_quotes.find(q => q.request_id === req.request_id);
+                if(quote) {
+                    content += `<br><span style="color:#2980b9; font-size:14px;">💰 Offer: ₹${quote.approved_amount} @ ${quote.interest_rate}% Interest</span>`;
+                    content += `</div><button class="accept-btn" onclick="acceptOffer(${req.request_id})">✅ Accept Offer</button>`;
+                } else { content += `</div>`; }
+            } else if (req.status === 'DISBURSED') {
+                content += `<br><span style="color:#27ae60; font-weight:bold;">💸 FUNDS DISBURSED - LOAN ACTIVE</span></div>`;
+            } else {
+                content += `</div>`;
+            }
+
+            container.innerHTML += `<div class="status-item st-${req.status}">${content}</div>`;
+        });
+    }
+
+    async function acceptOffer(id) {
+        if(!confirm("Do you accept this loan offer?")) return;
+        try {
+            const res = await fetch(`${API_BASE}/accept-offer`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ request_id: id })
+            });
+            const data = await res.json();
+            alert(data.message);
+            loadMyRequests();
+        } catch(e) { alert("Error accepting offer"); }
+    }
+
+    function logout() { window.location.href = 'login.html'; }
+    loadMyRequests();
+</script>
+</body>
+</html>
